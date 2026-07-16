@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from rest_framework import viewsets
 
-# Create your views here.
+from .models import AcademicYear
+from .serializers import AcademicYearSerializer
+
+
+class AcademicYearViewSet(viewsets.ModelViewSet):
+    queryset = AcademicYear.objects.all()
+    serializer_class = AcademicYearSerializer
