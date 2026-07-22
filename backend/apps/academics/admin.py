@@ -1,11 +1,10 @@
 from django.contrib import admin
 
-from .models import AcademicYear
+from .models import AcademicYear, Department, Program
 
 
 @admin.register(AcademicYear)
 class AcademicYearAdmin(admin.ModelAdmin):
-
     list_display = (
         "year_name",
         "start_date",
@@ -13,14 +12,47 @@ class AcademicYearAdmin(admin.ModelAdmin):
         "is_active",
     )
 
-    list_filter = (
+    list_filter = ("is_active",)
+
+    search_fields = ("year_name",)
+
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "hod_name",
         "is_active",
     )
 
     search_fields = (
-        "year_name",
+        "code",
+        "name",
+        "hod_name",
     )
 
-    ordering = (
-        "-start_date",
+    list_filter = (
+        "is_active",
+    )
+
+
+@admin.register(Program)
+class ProgramAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "department",
+        "duration_years",
+        "is_active",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+    )
+
+    list_filter = (
+        "department",
+        "is_active",
     )
