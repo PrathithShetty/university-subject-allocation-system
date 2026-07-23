@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import AcademicYear, Department, Program
+from .models import (
+    AcademicYear,
+    Department,
+    Program,
+    Semester,
+    Section,
+)
 
 
 @admin.register(AcademicYear)
@@ -12,9 +18,13 @@ class AcademicYearAdmin(admin.ModelAdmin):
         "is_active",
     )
 
-    list_filter = ("is_active",)
+    list_filter = (
+        "is_active",
+    )
 
-    search_fields = ("year_name",)
+    search_fields = (
+        "year_name",
+    )
 
 
 @admin.register(Department)
@@ -55,4 +65,52 @@ class ProgramAdmin(admin.ModelAdmin):
     list_filter = (
         "department",
         "is_active",
+    )
+
+
+@admin.register(Semester)
+class SemesterAdmin(admin.ModelAdmin):
+    list_display = (
+        "program",
+        "semester_number",
+        "name",
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+    )
+
+    list_filter = (
+        "program",
+        "is_active",
+    )
+
+    ordering = (
+        "program",
+        "semester_number",
+    )
+
+
+@admin.register(Section)
+class SectionAdmin(admin.ModelAdmin):
+    list_display = (
+        "semester",
+        "name",
+        "capacity",
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+    )
+
+    list_filter = (
+        "semester",
+        "is_active",
+    )
+
+    ordering = (
+        "semester",
+        "name",
     )

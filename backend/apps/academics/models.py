@@ -3,6 +3,14 @@ from django.db import models
 
 
 class AcademicYear(models.Model):
+    """
+    Represents an academic year.
+
+    Example:
+        2026-2027
+        2027-2028
+    """
+
     year_name = models.CharField(
         max_length=20,
         unique=True,
@@ -45,6 +53,15 @@ class AcademicYear(models.Model):
 
 
 class Department(models.Model):
+    """
+    Represents a university department.
+
+    Example:
+        AIML
+        CSE
+        ECE
+    """
+
     name = models.CharField(
         max_length=150,
         unique=True,
@@ -59,11 +76,17 @@ class Department(models.Model):
         max_length=100,
     )
 
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(
+        default=True,
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
 
     class Meta:
         ordering = ["name"]
@@ -73,6 +96,15 @@ class Department(models.Model):
 
 
 class Program(models.Model):
+    """
+    Represents a degree program.
+
+    Example:
+        B.Tech AIML
+        B.Tech CSE
+        M.Tech CSE
+    """
+
     department = models.ForeignKey(
         Department,
         on_delete=models.CASCADE,
@@ -109,3 +141,100 @@ class Program(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+
+class Semester(models.Model):
+    """
+    Represents one semester of a program.
+
+    Example:
+        Semester 1
+        Semester 2
+        Semester 3
+    """
+
+    program = models.ForeignKey(
+        Program,
+        on_delete=models.CASCADE,
+        related_name="semesters",
+    )
+
+    semester_number = models.PositiveSmallIntegerField()
+
+    name = models.CharField(
+        max_length=50,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["semester_number"]
+
+        unique_together = (
+            "program",
+            "semester_number",
+        )
+
+    def save(self, *args, **kwargs):
+        self.name = f"Semester {self.semester_number}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.program.code} - Semester {self.semester_number}"
+    
+class Section(models.Model):
+    """
+    Represents a class section.
+
+    Example:
+        Section A
+        Section B
+        Section C
+    """
+
+    semester = models.ForeignKey(
+        Semester,
+        on_delete=models.CASCADE,
+        related_name="sections",
+    )
+
+    name = models.CharField(
+        max_length=10,
+    )
+
+    capacity = models.PositiveIntegerField(
+        default=60,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = (
+            "semester",
+            "name",
+        )
+
+    def __str__(self):
+        return f"{self.semester} - Section {self.name}"
