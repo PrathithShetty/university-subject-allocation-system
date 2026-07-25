@@ -7,6 +7,7 @@ from .views import (
     ProgramViewSet,
     SemesterViewSet,
     SectionViewSet,
+    SubjectViewSet,
 )
 
 router = DefaultRouter()
@@ -39,6 +40,12 @@ router.register(
     r"sections",
     SectionViewSet,
     basename="section",
+)
+
+router.register(
+    r"subjects",
+    SubjectViewSet,
+    basename="subject",
 )
 
 urlpatterns = [

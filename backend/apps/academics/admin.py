@@ -6,6 +6,7 @@ from .models import (
     Program,
     Semester,
     Section,
+    Subject,
 )
 
 
@@ -113,4 +114,31 @@ class SectionAdmin(admin.ModelAdmin):
     ordering = (
         "semester",
         "name",
+    )
+
+
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "semester",
+        "credits",
+        "is_lab",
+        "is_active",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+    )
+
+    list_filter = (
+        "semester",
+        "is_lab",
+        "is_active",
+    )
+
+    ordering = (
+        "code",
     )

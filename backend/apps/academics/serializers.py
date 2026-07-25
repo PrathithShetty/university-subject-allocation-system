@@ -6,6 +6,7 @@ from .models import (
     Program,
     Semester,
     Section,
+    Subject,
 )
 
 
@@ -36,4 +37,10 @@ class SemesterSerializer(serializers.ModelSerializer):
 class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
+        fields = "__all__"
+
+
+class SubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
         fields = "__all__"
