@@ -7,6 +7,7 @@ from .models import (
     Semester,
     Section,
     Subject,
+    SubjectOffering,
 )
 
 from .serializers import (
@@ -16,6 +17,7 @@ from .serializers import (
     SemesterSerializer,
     SectionSerializer,
     SubjectSerializer,
+    SubjectOfferingSerializer,
 )
 
 
@@ -47,3 +49,8 @@ class SectionViewSet(viewsets.ModelViewSet):
 class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+
+
+class SubjectOfferingViewSet(viewsets.ModelViewSet):
+    queryset = SubjectOffering.objects.all()
+    serializer_class = SubjectOfferingSerializer
