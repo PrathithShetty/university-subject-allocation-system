@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
+
 urlpatterns = [
     path(
         "admin/",
@@ -20,5 +21,15 @@ urlpatterns = [
     path(
         "api/accounts/",
         include("apps.accounts.urls"),
+    ),
+
+    path(
+        "api/allocation/",
+        include("apps.allocation.urls"),
+    ),
+
+    path(
+        "api/preferences/",
+        include("apps.preferences.urls"),
     ),
 ]

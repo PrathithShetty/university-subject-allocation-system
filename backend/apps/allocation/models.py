@@ -1,3 +1,11 @@
-from django.db import models
+from .models import (
+    AllocationRun,
+    SubjectAllocation,
+    AllocationConflict,
+)
 
-# Create your models here.
+__all__ = [
+    "AllocationRun",
+    "SubjectAllocation",
+    "AllocationConflict",
+]

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.academics",
     "apps.staff",
+    "apps.preferences",
     "apps.allocation",
     "apps.audit",
     "apps.notifications",
