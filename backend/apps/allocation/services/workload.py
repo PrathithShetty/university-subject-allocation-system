@@ -51,10 +51,12 @@ class WorkloadCalculator:
     def get_remaining_capacity(
         self,
         faculty: Faculty,
+        preference_cycle=None,
         allocation_run=None,
     ) -> int:
         """
-        Returns remaining workload capacity.
+        Returns remaining workload capacity for the selected
+        preference cycle.
         """
 
         current_workload = self.get_current_workload(
@@ -62,13 +64,16 @@ class WorkloadCalculator:
             allocation_run=allocation_run,
         )
 
-        preference = (
-            faculty.workload_preferences
-            .filter(
-                preference_cycle__status="OPEN",
+        preference = None
+
+        if preference_cycle is not None:
+            preference = (
+                faculty.workload_preferences
+                .filter(
+                    preference_cycle=preference_cycle,
+                )
+                .first()
             )
-            .first()
-        )
 
         if preference is None:
             maximum_hours = faculty.max_workload_hours
@@ -84,10 +89,13 @@ class WorkloadCalculator:
         self,
         faculty: Faculty,
         additional_hours: int,
+        preference_cycle=None,
         allocation_run=None,
     ) -> bool:
         """
-        Checks whether additional workload can be assigned.
+        Checks whether additional workload can be assigned
+        without exceeding the maximum workload for the selected
+        preference cycle.
         """
 
         current_workload = self.get_current_workload(
@@ -95,13 +103,16 @@ class WorkloadCalculator:
             allocation_run=allocation_run,
         )
 
-        preference = (
-            faculty.workload_preferences
-            .filter(
-                preference_cycle__status="OPEN",
+        preference = None
+
+        if preference_cycle is not None:
+            preference = (
+                faculty.workload_preferences
+                .filter(
+                    preference_cycle=preference_cycle,
+                )
+                .first()
             )
-            .first()
-        )
 
         if preference is None:
             maximum_hours = faculty.max_workload_hours
@@ -116,10 +127,11 @@ class WorkloadCalculator:
     def get_workload_status(
         self,
         faculty: Faculty,
+        preference_cycle=None,
         allocation_run=None,
     ) -> dict:
         """
-        Returns a workload summary.
+        Returns a workload summary for the selected preference cycle.
         """
 
         current_workload = self.get_current_workload(
@@ -127,13 +139,16 @@ class WorkloadCalculator:
             allocation_run=allocation_run,
         )
 
-        preference = (
-            faculty.workload_preferences
-            .filter(
-                preference_cycle__status="OPEN",
+        preference = None
+
+        if preference_cycle is not None:
+            preference = (
+                faculty.workload_preferences
+                .filter(
+                    preference_cycle=preference_cycle,
+                )
+                .first()
             )
-            .first()
-        )
 
         if preference is None:
             minimum_hours = 0

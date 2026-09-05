@@ -53,12 +53,6 @@ class AllocationEngine:
         allocation_run,
         preference_cycle,
     ):
-        """
-        Executes the complete allocation process.
-
-        Returns a summary containing allocation and conflict counts.
-        """
-
         allocation_run.status = AllocationRun.Status.RUNNING
         allocation_run.started_at = timezone.now()
         allocation_run.error_message = ""
@@ -129,7 +123,6 @@ class AllocationEngine:
                     "updated_at",
                 ]
             )
-
             raise
 
     def allocate_offering(
@@ -138,11 +131,6 @@ class AllocationEngine:
         preference_cycle,
         subject_offering,
     ):
-        """
-        Finds and creates the best valid allocation for one
-        subject offering.
-        """
-
         subject = subject_offering.subject
         section = subject_offering.section
 
@@ -179,6 +167,7 @@ class AllocationEngine:
                             day=day,
                             slot_number=slot_number,
                             additional_hours=workload_hours,
+                            preference_cycle=preference_cycle,
                         )
                     )
 
@@ -255,10 +244,6 @@ class AllocationEngine:
         section,
         candidate,
     ):
-        """
-        Creates the final SubjectAllocation record.
-        """
-
         score = candidate["score"]
 
         preference_matched = (
@@ -292,10 +277,6 @@ class AllocationEngine:
         allocation_run,
         subject_offering,
     ):
-        """
-        Records a conflict when no valid faculty candidate exists.
-        """
-
         AllocationConflict.objects.create(
             allocation_run=allocation_run,
             conflict_type=(

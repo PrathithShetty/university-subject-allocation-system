@@ -20,11 +20,6 @@ class AllocationConflictChecker:
         day,
         slot_number,
     ):
-        """
-        Checks whether a faculty member is available at the
-        requested day and slot.
-        """
-
         availability = (
             faculty.availabilities
             .filter(
@@ -62,17 +57,14 @@ class AllocationConflictChecker:
         self,
         faculty,
         additional_hours,
+        preference_cycle=None,
         allocation_run=None,
     ):
-        """
-        Checks whether the assignment would exceed the
-        faculty member's maximum workload.
-        """
-
         is_within_limit = (
             self.workload_calculator.is_within_maximum(
                 faculty=faculty,
                 additional_hours=additional_hours,
+                preference_cycle=preference_cycle,
                 allocation_run=allocation_run,
             )
         )
@@ -81,6 +73,7 @@ class AllocationConflictChecker:
             workload = (
                 self.workload_calculator.get_workload_status(
                     faculty=faculty,
+                    preference_cycle=preference_cycle,
                     allocation_run=allocation_run,
                 )
             )
@@ -107,11 +100,6 @@ class AllocationConflictChecker:
         subject_offering,
         section,
     ):
-        """
-        Checks whether the same subject offering and section
-        have already been allocated in this run.
-        """
-
         exists = SubjectAllocation.objects.filter(
             allocation_run=allocation_run,
             subject_offering=subject_offering,
@@ -147,11 +135,6 @@ class AllocationConflictChecker:
         slot_number,
         allocation_run,
     ):
-        """
-        Checks whether the faculty member is already assigned
-        to another subject at the same day and slot.
-        """
-
         exists = SubjectAllocation.objects.filter(
             allocation_run=allocation_run,
             faculty=faculty,
@@ -189,11 +172,6 @@ class AllocationConflictChecker:
         slot_number,
         allocation_run,
     ):
-        """
-        Checks whether the section already has another subject
-        at the same day and slot.
-        """
-
         exists = SubjectAllocation.objects.filter(
             allocation_run=allocation_run,
             section=section,
@@ -233,11 +211,8 @@ class AllocationConflictChecker:
         day,
         slot_number,
         additional_hours,
+        preference_cycle=None,
     ):
-        """
-        Runs all hard-constraint checks.
-        """
-
         conflicts = []
 
         duplicate_conflict = self.check_duplicate_allocation(
@@ -252,6 +227,7 @@ class AllocationConflictChecker:
         workload_conflict = self.check_workload(
             faculty=faculty,
             additional_hours=additional_hours,
+            preference_cycle=preference_cycle,
             allocation_run=allocation_run,
         )
 
@@ -302,11 +278,8 @@ class AllocationConflictChecker:
         day,
         slot_number,
         additional_hours,
+        preference_cycle=None,
     ):
-        """
-        Returns True when no hard constraint is violated.
-        """
-
         conflicts = self.check_all(
             faculty=faculty,
             subject_offering=subject_offering,
@@ -315,6 +288,7 @@ class AllocationConflictChecker:
             day=day,
             slot_number=slot_number,
             additional_hours=additional_hours,
+            preference_cycle=preference_cycle,
         )
 
         return len(conflicts) == 0
