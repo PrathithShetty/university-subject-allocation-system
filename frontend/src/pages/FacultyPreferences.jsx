@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import preferenceService from "../services/preferenceService";
 import facultyService from "../services/facultyService";
 import academicService from "../services/academicService";
 
+import "../styles/shared.css";
 import "./FacultyPreferences.css";
 
 
 function FacultyPreferences() {
+  const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -15,8 +18,11 @@ function FacultyPreferences() {
   const [preferences, setPreferences] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     faculty: "",
@@ -54,6 +60,11 @@ function FacultyPreferences() {
 
       console.error(err);
 
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError(
         "Failed to load faculty preference data."
       );
@@ -74,6 +85,18 @@ function FacultyPreferences() {
   }, []);
 
 
+  const resetForm = () => {
+    setFormData({
+      faculty: "",
+      preference_cycle: "",
+      subject: "",
+      priority: "",
+    });
+
+    setEditingId(null);
+  };
+
+
   const handleChange = (event) => {
 
     const { name, value } = event.target;
@@ -83,6 +106,46 @@ function FacultyPreferences() {
       [name]: value,
     }));
 
+  };
+
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      const messages = Object.entries(data)
+        .map(([field, value]) => {
+          return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        })
+        .join(" | ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  };
+
+
+  const startEdit = (preference) => {
+    setEditingId(preference.id);
+
+    setFormData({
+      faculty: preference.faculty,
+      preference_cycle: preference.preference_cycle,
+      subject: preference.subject,
+      priority: preference.priority,
+    });
+
+    setError("");
+    setSuccess("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const cancelEdit = () => {
+    resetForm();
+    setError("");
   };
 
 
@@ -111,26 +174,24 @@ function FacultyPreferences() {
 
     try {
 
-      await preferenceService.createFacultyPreference({
+      const payload = {
         faculty: Number(formData.faculty),
         preference_cycle: Number(formData.preference_cycle),
         subject: Number(formData.subject),
         priority: Number(formData.priority),
-      });
+      };
 
+      if (editingId) {
+        await preferenceService.updateFacultyPreference(editingId, payload);
 
-      setSuccess(
-        "Faculty preference added successfully."
-      );
+        setSuccess("Faculty preference updated successfully.");
+      } else {
+        await preferenceService.createFacultyPreference(payload);
 
+        setSuccess("Faculty preference added successfully.");
+      }
 
-      setFormData({
-        faculty: "",
-        preference_cycle: "",
-        subject: "",
-        priority: "",
-      });
-
+      resetForm();
 
       await loadData();
 
@@ -138,31 +199,57 @@ function FacultyPreferences() {
 
       console.error(err);
 
-      if (err.response?.data) {
+      setError(
+        extractErrorMessage(
+          err,
+          editingId
+            ? "Failed to update faculty preference."
+            : "Failed to add faculty preference."
+        )
+      );
 
-        const data = err.response.data;
+    }
 
-        const messages = Object.entries(data)
-          .map(([field, value]) => {
-            return `${field}: ${
-              Array.isArray(value)
-                ? value.join(", ")
-                : value
-            }`;
-          })
-          .join(" | ");
+  };
 
-        setError(
-          messages || "Failed to add faculty preference."
-        );
 
-      } else {
+  const handleDelete = async (preference) => {
 
-        setError(
-          "Failed to add faculty preference."
-        );
+    const confirmed = window.confirm(
+      "Delete this faculty preference?"
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingId(preference.id);
+      setError("");
+      setSuccess("");
+
+      await preferenceService.deleteFacultyPreference(preference.id);
+
+      setSuccess("Faculty preference deleted successfully.");
+
+      if (editingId === preference.id) {
+        resetForm();
       }
+
+      await loadData();
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(
+        extractErrorMessage(err, "Failed to delete faculty preference.")
+      );
+
+    } finally {
+
+      setDeletingId(null);
 
     }
 
@@ -231,6 +318,13 @@ function FacultyPreferences() {
 
         </div>
 
+        <button
+          className="back-button"
+          onClick={() => navigate("/dashboard")}
+        >
+          Back to Dashboard
+        </button>
+
       </div>
 
 
@@ -255,7 +349,7 @@ function FacultyPreferences() {
       <div className="form-card">
 
         <h2>
-          Add Faculty Preference
+          {editingId ? "Edit Faculty Preference" : "Add Faculty Preference"}
         </h2>
 
 
@@ -363,13 +457,14 @@ function FacultyPreferences() {
             <div className="form-group">
 
               <label>
-                Priority *
+                Priority * (1 highest - 5 lowest)
               </label>
 
               <input
                 type="number"
                 name="priority"
                 min="1"
+                max="5"
                 value={formData.priority}
                 onChange={handleChange}
                 placeholder="Example: 1"
@@ -386,8 +481,18 @@ function FacultyPreferences() {
               type="submit"
               className="primary-button"
             >
-              Add Preference
+              {editingId ? "Update Preference" : "Add Preference"}
             </button>
+
+            {editingId && (
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
 
           </div>
 
@@ -454,6 +559,10 @@ function FacultyPreferences() {
                     Priority
                   </th>
 
+                  <th>
+                    Actions
+                  </th>
+
                 </tr>
 
               </thead>
@@ -493,6 +602,25 @@ function FacultyPreferences() {
                         {preference.priority}
                       </span>
 
+                    </td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => startEdit(preference)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(preference)}
+                          disabled={deletingId === preference.id}
+                        >
+                          {deletingId === preference.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

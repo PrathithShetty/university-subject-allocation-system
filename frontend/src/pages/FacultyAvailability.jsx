@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import preferenceService from "../services/preferenceService";
 import facultyService from "../services/facultyService";
 
+import "../styles/shared.css";
 import "./FacultyAvailability.css";
 
 
 function FacultyAvailability() {
+  const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState([]);
   const [availability, setAvailability] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     faculty: "",
@@ -55,6 +61,11 @@ function FacultyAvailability() {
 
       console.error(err);
 
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError(
         "Failed to load faculty availability data."
       );
@@ -75,6 +86,18 @@ function FacultyAvailability() {
   }, []);
 
 
+  const resetForm = () => {
+    setFormData({
+      faculty: "",
+      day: "",
+      slot_number: "",
+      is_available: true,
+    });
+
+    setEditingId(null);
+  };
+
+
   const handleChange = (event) => {
 
     const { name, value, type, checked } = event.target;
@@ -84,6 +107,46 @@ function FacultyAvailability() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
+  };
+
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      const messages = Object.entries(data)
+        .map(([field, value]) => {
+          return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        })
+        .join(" | ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  };
+
+
+  const startEdit = (record) => {
+    setEditingId(record.id);
+
+    setFormData({
+      faculty: record.faculty,
+      day: record.day,
+      slot_number: record.slot_number,
+      is_available: record.is_available,
+    });
+
+    setError("");
+    setSuccess("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const cancelEdit = () => {
+    resetForm();
+    setError("");
   };
 
 
@@ -111,26 +174,24 @@ function FacultyAvailability() {
 
     try {
 
-      await preferenceService.createFacultyAvailability({
+      const payload = {
         faculty: Number(formData.faculty),
         day: formData.day,
         slot_number: Number(formData.slot_number),
         is_available: formData.is_available,
-      });
+      };
 
+      if (editingId) {
+        await preferenceService.updateFacultyAvailability(editingId, payload);
 
-      setSuccess(
-        "Faculty availability added successfully."
-      );
+        setSuccess("Faculty availability updated successfully.");
+      } else {
+        await preferenceService.createFacultyAvailability(payload);
 
+        setSuccess("Faculty availability added successfully.");
+      }
 
-      setFormData({
-        faculty: "",
-        day: "",
-        slot_number: "",
-        is_available: true,
-      });
-
+      resetForm();
 
       await loadData();
 
@@ -138,31 +199,57 @@ function FacultyAvailability() {
 
       console.error(err);
 
-      if (err.response?.data) {
+      setError(
+        extractErrorMessage(
+          err,
+          editingId
+            ? "Failed to update faculty availability."
+            : "Failed to add faculty availability."
+        )
+      );
 
-        const data = err.response.data;
+    }
 
-        const messages = Object.entries(data)
-          .map(([field, value]) => {
-            return `${field}: ${
-              Array.isArray(value)
-                ? value.join(", ")
-                : value
-            }`;
-          })
-          .join(" | ");
+  };
 
-        setError(
-          messages || "Failed to add faculty availability."
-        );
 
-      } else {
+  const handleDelete = async (record) => {
 
-        setError(
-          "Failed to add faculty availability."
-        );
+    const confirmed = window.confirm(
+      "Delete this faculty availability record?"
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingId(record.id);
+      setError("");
+      setSuccess("");
+
+      await preferenceService.deleteFacultyAvailability(record.id);
+
+      setSuccess("Faculty availability deleted successfully.");
+
+      if (editingId === record.id) {
+        resetForm();
       }
+
+      await loadData();
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(
+        extractErrorMessage(err, "Failed to delete faculty availability.")
+      );
+
+    } finally {
+
+      setDeletingId(null);
 
     }
 
@@ -203,6 +290,13 @@ function FacultyAvailability() {
 
         </div>
 
+        <button
+          className="back-button"
+          onClick={() => navigate("/dashboard")}
+        >
+          Back to Dashboard
+        </button>
+
       </div>
 
 
@@ -227,7 +321,7 @@ function FacultyAvailability() {
       <div className="form-card">
 
         <h2>
-          Add Faculty Availability
+          {editingId ? "Edit Faculty Availability" : "Add Faculty Availability"}
         </h2>
 
 
@@ -303,13 +397,14 @@ function FacultyAvailability() {
             <div className="form-group">
 
               <label>
-                Slot Number *
+                Slot Number * (1-8)
               </label>
 
               <input
                 type="number"
                 name="slot_number"
                 min="1"
+                max="8"
                 value={formData.slot_number}
                 onChange={handleChange}
                 placeholder="Example: 1"
@@ -344,8 +439,18 @@ function FacultyAvailability() {
               type="submit"
               className="primary-button"
             >
-              Add Availability
+              {editingId ? "Update Availability" : "Add Availability"}
             </button>
+
+            {editingId && (
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
 
           </div>
 
@@ -397,6 +502,7 @@ function FacultyAvailability() {
                   <th>Day</th>
                   <th>Slot</th>
                   <th>Availability</th>
+                  <th>Actions</th>
 
                 </tr>
 
@@ -439,6 +545,25 @@ function FacultyAvailability() {
                           : "Unavailable"}
                       </span>
 
+                    </td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => startEdit(record)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(record)}
+                          disabled={deletingId === record.id}
+                        >
+                          {deletingId === record.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

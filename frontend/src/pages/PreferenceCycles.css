@@ -1,7 +1,16 @@
 .preference-cycles-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
   padding: 30px;
+}
+
+.preference-cycles-page .page-header,
+.preference-cycles-page .form-card,
+.preference-cycles-page .table-card {
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {

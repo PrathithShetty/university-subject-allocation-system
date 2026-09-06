@@ -93,7 +93,7 @@ class SubjectAllocationSerializer(serializers.ModelSerializer):
 
 class AllocationRunSerializer(serializers.ModelSerializer):
     academic_year_name = serializers.CharField(
-        source="academic_year.name",
+        source="academic_year.year_name",
         read_only=True,
     )
 

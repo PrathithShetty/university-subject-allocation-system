@@ -4,25 +4,23 @@ from decimal import Decimal
 class AllocationScorer:
     """
     Calculates how well a faculty member matches an allocation.
+
+    The scoring system balances:
+        1. Subject preferences
+        2. Section preferences
+        3. Time-slot preferences
+        4. Faculty workload fairness
     """
 
     SUBJECT_PRIORITY_SCORES = {
-        1: Decimal("50"),
-        2: Decimal("40"),
-        3: Decimal("30"),
-        4: Decimal("20"),
+        1: Decimal("30"),
+        2: Decimal("25"),
+        3: Decimal("20"),
+        4: Decimal("15"),
         5: Decimal("10"),
     }
 
     SECTION_PRIORITY_SCORES = {
-        1: Decimal("20"),
-        2: Decimal("15"),
-        3: Decimal("10"),
-        4: Decimal("5"),
-        5: Decimal("2"),
-    }
-
-    TIME_SLOT_PRIORITY_SCORES = {
         1: Decimal("15"),
         2: Decimal("12"),
         3: Decimal("9"),
@@ -30,7 +28,18 @@ class AllocationScorer:
         5: Decimal("3"),
     }
 
-    WORKLOAD_BONUS = Decimal("15")
+    TIME_SLOT_PRIORITY_SCORES = {
+        1: Decimal("10"),
+        2: Decimal("8"),
+        3: Decimal("6"),
+        4: Decimal("4"),
+        5: Decimal("2"),
+    }
+
+    UNDERLOADED_BONUS = Decimal("30")
+    PREFERRED_WORKLOAD_BONUS = Decimal("20")
+    WITHIN_WORKLOAD_BONUS = Decimal("10")
+    OVER_PREFERRED_BONUS = Decimal("0")
 
     def calculate_subject_preference_score(
         self,
@@ -120,15 +129,21 @@ class AllocationScorer:
         if preference is None:
             return Decimal("0")
 
+        if current_workload < preference.minimum_hours:
+            return self.UNDERLOADED_BONUS
+
         if (
             preference.minimum_hours
             <= current_workload
-            <= preference.preferred_hours
+            < preference.preferred_hours
         ):
-            return self.WORKLOAD_BONUS
+            return self.PREFERRED_WORKLOAD_BONUS
+
+        if current_workload <= preference.preferred_hours:
+            return self.WITHIN_WORKLOAD_BONUS
 
         if current_workload <= preference.maximum_hours:
-            return Decimal("5")
+            return self.OVER_PREFERRED_BONUS
 
         return Decimal("0")
 

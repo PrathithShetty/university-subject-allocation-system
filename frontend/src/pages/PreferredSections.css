@@ -1,7 +1,16 @@
 .preferred-sections-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
   padding: 30px;
+}
+
+.preferred-sections-page .page-header,
+.preferred-sections-page .form-card,
+.preferred-sections-page .table-card {
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {

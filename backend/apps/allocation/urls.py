@@ -6,10 +6,17 @@ from .views import (
     AllocationRunDetailView,
     AllocationRunExecuteView,
     AllocationRunListCreateView,
+    WorkloadDashboardView,
 )
 
 
 urlpatterns = [
+    path(
+        "workload-dashboard/",
+        WorkloadDashboardView.as_view(),
+        name="workload-dashboard",
+    ),
+
     path(
         "runs/",
         AllocationRunListCreateView.as_view(),

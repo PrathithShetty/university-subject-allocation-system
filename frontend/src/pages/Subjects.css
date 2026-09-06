@@ -1,10 +1,23 @@
-.faculty-availability-page {
+.subjects-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
   padding: 30px;
+}
+
+.subjects-page .page-header,
+.subjects-page .form-card,
+.subjects-page .table-card {
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
   margin-bottom: 25px;
 }
 
@@ -16,6 +29,48 @@
 .page-header p {
   margin: 8px 0 0;
   color: #666;
+}
+
+.primary-button,
+.secondary-button {
+  border: none;
+  border-radius: 6px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #1976d2;
+  color: white;
+}
+
+.primary-button:hover {
+  background: #1565c0;
+}
+
+.secondary-button {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.message {
+  padding: 13px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.success-message {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
 }
 
 .form-card,
@@ -58,65 +113,17 @@
   background: white;
 }
 
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #1976d2;
-}
-
-.checkbox-group {
-  justify-content: center;
-}
-
 .checkbox-group label {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.checkbox-group input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
+  gap: 8px;
+  font-weight: 500;
 }
 
 .form-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 25px;
-}
-
-.primary-button {
-  background: #1976d2;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 11px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.primary-button:hover {
-  background: #1565c0;
-}
-
-.message {
-  padding: 13px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-}
-
-.error-message {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
-}
-
-.success-message {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
 }
 
 .table-header {
@@ -152,22 +159,19 @@ th {
   font-weight: 600;
 }
 
-.availability-badge {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 12px;
+.subject-code {
   font-weight: 700;
+  color: #1976d2;
 }
 
-.availability-badge.available {
-  background: #e8f5e9;
+.status-active {
   color: #2e7d32;
+  font-weight: 600;
 }
 
-.availability-badge.unavailable {
-  background: #ffebee;
+.status-inactive {
   color: #c62828;
+  font-weight: 600;
 }
 
 .empty-state {
@@ -177,18 +181,16 @@ th {
 }
 
 @media (max-width: 768px) {
-
-  .faculty-availability-page {
+  .subjects-page {
     padding: 20px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
-
-  .form-card,
-  .table-card {
-    padding: 15px;
-  }
-
 }

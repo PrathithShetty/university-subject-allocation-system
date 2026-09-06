@@ -160,6 +160,11 @@
   color: #92400e;
 }
 
+.status-running {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .status-failed {
   background: #fee2e2;
   color: #991b1b;
