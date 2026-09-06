@@ -70,9 +70,13 @@
 
 .allocation-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
   margin-bottom: 32px;
+}
+
+.conflict-count {
+  color: #b42318;
 }
 
 .summary-card {
@@ -194,6 +198,59 @@
 .allocation-status-failed {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.conflicts-section {
+  margin-top: 24px;
+}
+
+.conflicts-empty {
+  padding: 30px;
+}
+
+.conflicts-empty p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.conflict-message {
+  white-space: normal;
+  min-width: 260px;
+  color: #374151;
+}
+
+.severity-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.severity-info {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.severity-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.severity-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.severity-critical {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+
+@media (max-width: 900px) {
+  .allocation-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 800px) {

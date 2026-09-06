@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import preferenceService from "../services/preferenceService";
 import academicService from "../services/academicService";
 
+import "../styles/shared.css";
 import "./PreferenceCycles.css";
 
 
 function PreferenceCycles() {
+  const navigate = useNavigate();
 
   const [cycles, setCycles] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [showForm, setShowForm] = useState(false);
+  const [editingCycle, setEditingCycle] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -45,6 +50,11 @@ function PreferenceCycles() {
 
       console.error(err);
 
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError(
         "Failed to load preference cycle data."
       );
@@ -65,6 +75,19 @@ function PreferenceCycles() {
   }, []);
 
 
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      academic_year: "",
+      start_date: "",
+      end_date: "",
+      status: "DRAFT",
+    });
+
+    setEditingCycle(null);
+  };
+
+
   const handleChange = (event) => {
 
     const { name, value } = event.target;
@@ -74,6 +97,57 @@ function PreferenceCycles() {
       [name]: value,
     }));
 
+  };
+
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      const messages = Object.entries(data)
+        .map(([field, value]) => {
+          return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        })
+        .join(" | ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  };
+
+
+  const openAddForm = () => {
+    resetForm();
+    setError("");
+    setSuccess("");
+    setShowForm(true);
+  };
+
+
+  const openEditForm = (cycle) => {
+    setEditingCycle(cycle);
+
+    setFormData({
+      name: cycle.name,
+      academic_year: cycle.academic_year,
+      start_date: cycle.start_date,
+      end_date: cycle.end_date,
+      status: cycle.status,
+    });
+
+    setError("");
+    setSuccess("");
+    setShowForm(true);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const closeForm = () => {
+    setShowForm(false);
+    resetForm();
+    setError("");
   };
 
 
@@ -101,31 +175,28 @@ function PreferenceCycles() {
 
       }
 
-
-      await preferenceService.createPreferenceCycle({
+      const payload = {
         name: formData.name,
         academic_year: Number(formData.academic_year),
         start_date: formData.start_date,
         end_date: formData.end_date,
         status: formData.status,
-      });
+      };
 
+      if (editingCycle) {
+        await preferenceService.updatePreferenceCycle(
+          editingCycle.id,
+          payload
+        );
 
-      setSuccess(
-        "Preference cycle created successfully."
-      );
+        setSuccess("Preference cycle updated successfully.");
+      } else {
+        await preferenceService.createPreferenceCycle(payload);
 
+        setSuccess("Preference cycle created successfully.");
+      }
 
-      setFormData({
-        name: "",
-        academic_year: "",
-        start_date: "",
-        end_date: "",
-        status: "DRAFT",
-      });
-
-
-      setShowForm(false);
+      closeForm();
 
       await loadData();
 
@@ -133,27 +204,57 @@ function PreferenceCycles() {
 
       console.error(err);
 
-      if (err.response?.data) {
+      setError(
+        extractErrorMessage(
+          err,
+          editingCycle
+            ? "Failed to update preference cycle."
+            : "Failed to create preference cycle."
+        )
+      );
 
-        const data = err.response.data;
+    }
 
-        const messages = Object.entries(data)
-          .map(([field, value]) => {
-            return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
-          })
-          .join(" | ");
+  };
 
-        setError(
-          messages || "Failed to create preference cycle."
-        );
 
-      } else {
+  const handleDelete = async (cycle) => {
 
-        setError(
-          "Failed to create preference cycle."
-        );
+    const confirmed = window.confirm(
+      `Delete the preference cycle "${cycle.name}"? This cannot be undone.`
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingId(cycle.id);
+      setError("");
+      setSuccess("");
+
+      await preferenceService.deletePreferenceCycle(cycle.id);
+
+      setSuccess("Preference cycle deleted successfully.");
+
+      if (editingCycle?.id === cycle.id) {
+        closeForm();
       }
+
+      await loadData();
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(
+        extractErrorMessage(err, "Failed to delete preference cycle.")
+      );
+
+    } finally {
+
+      setDeletingId(null);
 
     }
 
@@ -193,21 +294,27 @@ function PreferenceCycles() {
 
         </div>
 
+        <div className="row-actions">
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            setShowForm(!showForm);
-            setError("");
-            setSuccess("");
-          }}
-        >
+          <button
+            className="back-button"
+            onClick={() => navigate("/dashboard")}
+          >
+            Back to Dashboard
+          </button>
 
-          {showForm
-            ? "Cancel"
-            : "+ Create Preference Cycle"}
+          <button
+            className="primary-button"
+            onClick={showForm ? closeForm : openAddForm}
+          >
 
-        </button>
+            {showForm
+              ? "Cancel"
+              : "+ Create Preference Cycle"}
+
+          </button>
+
+        </div>
 
       </div>
 
@@ -235,7 +342,9 @@ function PreferenceCycles() {
         <div className="form-card">
 
           <h2>
-            Create Preference Cycle
+            {editingCycle
+              ? "Edit Preference Cycle"
+              : "Create Preference Cycle"}
           </h2>
 
 
@@ -361,13 +470,13 @@ function PreferenceCycles() {
                 type="submit"
                 className="primary-button"
               >
-                Create Cycle
+                {editingCycle ? "Update Cycle" : "Create Cycle"}
               </button>
 
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => setShowForm(false)}
+                onClick={closeForm}
               >
                 Cancel
               </button>
@@ -442,6 +551,10 @@ function PreferenceCycles() {
                     Status
                   </th>
 
+                  <th>
+                    Actions
+                  </th>
+
                 </tr>
 
               </thead>
@@ -486,6 +599,25 @@ function PreferenceCycles() {
                         {cycle.status}
                       </span>
 
+                    </td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => openEditForm(cycle)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(cycle)}
+                          disabled={deletingId === cycle.id}
+                        >
+                          {deletingId === cycle.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

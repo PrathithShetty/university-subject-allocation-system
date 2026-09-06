@@ -320,7 +320,7 @@ function Dashboard() {
                 <div>
                   <span>Academic Year</span>
                   <strong>
-                    {latestRun.academic_year}
+                    {latestRun.academic_year_name || latestRun.academic_year}
                   </strong>
                 </div>
 
@@ -385,36 +385,48 @@ function Dashboard() {
 
           <div className="quick-actions">
 
-            <button
-              onClick={() =>
-                navigate("/allocation-runs")
-              }
-            >
+            <button onClick={() => navigate("/allocation-runs")}>
               Allocation Runs
             </button>
 
-            <button
-              onClick={() =>
-                navigate("/subjects")
-              }
-            >
-              Subjects
+            <button onClick={() => navigate("/workload-dashboard")}>
+              Workload Dashboard
             </button>
 
-            <button
-              onClick={() =>
-                navigate("/faculty")
-              }
-            >
+            <button onClick={() => navigate("/faculty")}>
               Faculty
             </button>
 
-            <button
-              onClick={() =>
-                navigate("/sections")
-              }
-            >
+            <button onClick={() => navigate("/subjects")}>
+              Subjects
+            </button>
+
+            <button onClick={() => navigate("/sections")}>
               Sections
+            </button>
+
+            <button onClick={() => navigate("/preference-cycles")}>
+              Preference Cycles
+            </button>
+
+            <button onClick={() => navigate("/faculty-preferences")}>
+              Faculty Preferences
+            </button>
+
+            <button onClick={() => navigate("/preferred-sections")}>
+              Preferred Sections
+            </button>
+
+            <button onClick={() => navigate("/preferred-time-slots")}>
+              Preferred Time Slots
+            </button>
+
+            <button onClick={() => navigate("/faculty-availability")}>
+              Faculty Availability
+            </button>
+
+            <button onClick={() => navigate("/workload-preferences")}>
+              Workload Preferences
             </button>
 
           </div>

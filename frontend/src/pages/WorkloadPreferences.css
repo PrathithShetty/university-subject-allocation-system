@@ -114,6 +114,15 @@
   background: #f8f9fc;
 }
 
+.workload-card .cancel-button {
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.workload-header .back-button {
+  margin-top: 14px;
+}
+
 @media (max-width: 768px) {
   .workload-page {
     padding: 20px;

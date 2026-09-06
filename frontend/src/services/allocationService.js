@@ -6,6 +6,15 @@ const allocationService = {
     return response.data;
   },
 
+  createRun: async (data) => {
+    const response = await api.post(
+      "/allocation/runs/",
+      data
+    );
+
+    return response.data;
+  },
+
   getRunAllocations: async (runId) => {
     const response = await api.get(
       `/allocation/runs/${runId}/allocations/`
@@ -28,6 +37,25 @@ const allocationService = {
       {
         preference_cycle: preferenceCycle,
       }
+    );
+
+    return response.data;
+  },
+
+  getWorkloadDashboard: async ({ preferenceCycle, allocationRun } = {}) => {
+    const params = {};
+
+    if (preferenceCycle) {
+      params.preference_cycle = preferenceCycle;
+    }
+
+    if (allocationRun) {
+      params.allocation_run = allocationRun;
+    }
+
+    const response = await api.get(
+      "/allocation/workload-dashboard/",
+      { params }
     );
 
     return response.data;

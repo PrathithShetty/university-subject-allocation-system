@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import preferenceService from "../services/preferenceService";
 import facultyService from "../services/facultyService";
 
+import "../styles/shared.css";
 import "./PreferredTimeSlots.css";
 
 
 function PreferredTimeSlots() {
+  const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState([]);
   const [cycles, setCycles] = useState([]);
   const [preferences, setPreferences] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     faculty: "",
@@ -60,6 +66,11 @@ function PreferredTimeSlots() {
 
       console.error(err);
 
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError(
         "Failed to load preferred time slot data."
       );
@@ -80,6 +91,19 @@ function PreferredTimeSlots() {
   }, []);
 
 
+  const resetForm = () => {
+    setFormData({
+      faculty: "",
+      preference_cycle: "",
+      day: "",
+      slot_number: "",
+      priority: "",
+    });
+
+    setEditingId(null);
+  };
+
+
   const handleChange = (event) => {
 
     const { name, value } = event.target;
@@ -89,6 +113,47 @@ function PreferredTimeSlots() {
       [name]: value,
     }));
 
+  };
+
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      const messages = Object.entries(data)
+        .map(([field, value]) => {
+          return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        })
+        .join(" | ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  };
+
+
+  const startEdit = (preference) => {
+    setEditingId(preference.id);
+
+    setFormData({
+      faculty: preference.faculty,
+      preference_cycle: preference.preference_cycle,
+      day: preference.day,
+      slot_number: preference.slot_number,
+      priority: preference.priority,
+    });
+
+    setError("");
+    setSuccess("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const cancelEdit = () => {
+    resetForm();
+    setError("");
   };
 
 
@@ -118,28 +183,25 @@ function PreferredTimeSlots() {
 
     try {
 
-      await preferenceService.createPreferredTimeSlot({
+      const payload = {
         faculty: Number(formData.faculty),
         preference_cycle: Number(formData.preference_cycle),
         day: formData.day,
         slot_number: Number(formData.slot_number),
         priority: Number(formData.priority),
-      });
+      };
 
+      if (editingId) {
+        await preferenceService.updatePreferredTimeSlot(editingId, payload);
 
-      setSuccess(
-        "Preferred time slot added successfully."
-      );
+        setSuccess("Preferred time slot updated successfully.");
+      } else {
+        await preferenceService.createPreferredTimeSlot(payload);
 
+        setSuccess("Preferred time slot added successfully.");
+      }
 
-      setFormData({
-        faculty: "",
-        preference_cycle: "",
-        day: "",
-        slot_number: "",
-        priority: "",
-      });
-
+      resetForm();
 
       await loadData();
 
@@ -147,31 +209,57 @@ function PreferredTimeSlots() {
 
       console.error(err);
 
-      if (err.response?.data) {
+      setError(
+        extractErrorMessage(
+          err,
+          editingId
+            ? "Failed to update preferred time slot."
+            : "Failed to add preferred time slot."
+        )
+      );
 
-        const data = err.response.data;
+    }
 
-        const messages = Object.entries(data)
-          .map(([field, value]) => {
-            return `${field}: ${
-              Array.isArray(value)
-                ? value.join(", ")
-                : value
-            }`;
-          })
-          .join(" | ");
+  };
 
-        setError(
-          messages || "Failed to add preferred time slot."
-        );
 
-      } else {
+  const handleDelete = async (preference) => {
 
-        setError(
-          "Failed to add preferred time slot."
-        );
+    const confirmed = window.confirm(
+      "Delete this preferred time slot?"
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingId(preference.id);
+      setError("");
+      setSuccess("");
+
+      await preferenceService.deletePreferredTimeSlot(preference.id);
+
+      setSuccess("Preferred time slot deleted successfully.");
+
+      if (editingId === preference.id) {
+        resetForm();
       }
+
+      await loadData();
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(
+        extractErrorMessage(err, "Failed to delete preferred time slot.")
+      );
+
+    } finally {
+
+      setDeletingId(null);
 
     }
 
@@ -225,6 +313,13 @@ function PreferredTimeSlots() {
 
         </div>
 
+        <button
+          className="back-button"
+          onClick={() => navigate("/dashboard")}
+        >
+          Back to Dashboard
+        </button>
+
       </div>
 
 
@@ -249,7 +344,7 @@ function PreferredTimeSlots() {
       <div className="form-card">
 
         <h2>
-          Add Preferred Time Slot
+          {editingId ? "Edit Preferred Time Slot" : "Add Preferred Time Slot"}
         </h2>
 
 
@@ -357,13 +452,14 @@ function PreferredTimeSlots() {
             <div className="form-group">
 
               <label>
-                Slot Number *
+                Slot Number * (1-8)
               </label>
 
               <input
                 type="number"
                 name="slot_number"
                 min="1"
+                max="8"
                 value={formData.slot_number}
                 onChange={handleChange}
                 placeholder="Example: 1"
@@ -375,13 +471,14 @@ function PreferredTimeSlots() {
             <div className="form-group">
 
               <label>
-                Priority *
+                Priority * (1 highest - 5 lowest)
               </label>
 
               <input
                 type="number"
                 name="priority"
                 min="1"
+                max="5"
                 value={formData.priority}
                 onChange={handleChange}
                 placeholder="Example: 1"
@@ -398,8 +495,18 @@ function PreferredTimeSlots() {
               type="submit"
               className="primary-button"
             >
-              Add Preferred Time Slot
+              {editingId ? "Update Preferred Time Slot" : "Add Preferred Time Slot"}
             </button>
+
+            {editingId && (
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
 
           </div>
 
@@ -452,6 +559,7 @@ function PreferredTimeSlots() {
                   <th>Day</th>
                   <th>Slot</th>
                   <th>Priority</th>
+                  <th>Actions</th>
 
                 </tr>
 
@@ -494,6 +602,25 @@ function PreferredTimeSlots() {
                         {preference.priority}
                       </span>
 
+                    </td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => startEdit(preference)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(preference)}
+                          disabled={deletingId === preference.id}
+                        >
+                          {deletingId === preference.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

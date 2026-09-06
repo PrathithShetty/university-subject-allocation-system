@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import preferenceService from "../services/preferenceService";
 import facultyService from "../services/facultyService";
+import "../styles/shared.css";
 import "./WorkloadPreferences.css";
 
 function WorkloadPreferences() {
+  const navigate = useNavigate();
+
   const [faculties, setFaculties] = useState([]);
   const [preferenceCycles, setPreferenceCycles] = useState([]);
   const [workloadPreferences, setWorkloadPreferences] = useState([]);
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     faculty: "",
@@ -18,8 +24,21 @@ function WorkloadPreferences() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const resetForm = () => {
+    setFormData({
+      faculty: "",
+      preference_cycle: "",
+      minimum_hours: "",
+      preferred_hours: "",
+      maximum_hours: "",
+    });
+
+    setEditingId(null);
+  };
 
   const loadData = async () => {
     try {
@@ -41,6 +60,12 @@ function WorkloadPreferences() {
       setWorkloadPreferences(workloadData);
     } catch (err) {
       console.error(err);
+
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError("Failed to load workload preferences.");
     } finally {
       setLoading(false);
@@ -58,6 +83,46 @@ function WorkloadPreferences() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const startEdit = (preference) => {
+    setEditingId(preference.id);
+
+    setFormData({
+      faculty: preference.faculty,
+      preference_cycle: preference.preference_cycle,
+      minimum_hours: preference.minimum_hours,
+      preferred_hours: preference.preferred_hours,
+      maximum_hours: preference.maximum_hours,
+    });
+
+    setMessage("");
+    setError("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    resetForm();
+    setError("");
+  };
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      return Object.entries(data)
+        .map(([field, value]) => {
+          const text = Array.isArray(value)
+            ? value.join(", ")
+            : value;
+
+          return `${field}: ${text}`;
+        })
+        .join(" | ");
+    }
+
+    return fallback;
   };
 
   const handleSubmit = async (e) => {
@@ -91,43 +156,84 @@ function WorkloadPreferences() {
     try {
       setSubmitting(true);
 
-      await preferenceService.createWorkloadPreference({
+      const payload = {
         faculty: Number(formData.faculty),
         preference_cycle: Number(formData.preference_cycle),
         minimum_hours: minimum,
         preferred_hours: preferred,
         maximum_hours: maximum,
-      });
+      };
 
-      setMessage(
-        "Workload preference added successfully."
-      );
+      if (editingId) {
+        await preferenceService.updateWorkloadPreference(
+          editingId,
+          payload
+        );
 
-      setFormData({
-        faculty: "",
-        preference_cycle: "",
-        minimum_hours: "",
-        preferred_hours: "",
-        maximum_hours: "",
-      });
+        setMessage("Workload preference updated successfully.");
+      } else {
+        await preferenceService.createWorkloadPreference(payload);
+
+        setMessage("Workload preference added successfully.");
+      }
+
+      resetForm();
 
       await loadData();
     } catch (err) {
       console.error(err);
 
-      if (err.response?.data) {
-        setError(
-          typeof err.response.data === "string"
-            ? err.response.data
-            : JSON.stringify(err.response.data)
-        );
-      } else {
-        setError(
-          "Failed to add workload preference."
-        );
-      }
+      setError(
+        extractErrorMessage(
+          err,
+          editingId
+            ? "Failed to update workload preference."
+            : "Failed to add workload preference."
+        )
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (preference) => {
+    const confirmed = window.confirm(
+      `Delete the workload preference for ${getFacultyName(
+        preference.faculty
+      )}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingId(preference.id);
+      setError("");
+      setMessage("");
+
+      await preferenceService.deleteWorkloadPreference(
+        preference.id
+      );
+
+      setMessage("Workload preference deleted successfully.");
+
+      if (editingId === preference.id) {
+        resetForm();
+      }
+
+      await loadData();
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        extractErrorMessage(
+          err,
+          "Failed to delete workload preference."
+        )
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -141,8 +247,8 @@ function WorkloadPreferences() {
     }
 
     return (
-      faculty.name ||
-      faculty.user?.name ||
+      faculty.full_name ||
+      `${faculty.first_name || ""} ${faculty.last_name || ""}`.trim() ||
       `Faculty #${faculty.id}`
     );
   };
@@ -170,10 +276,21 @@ function WorkloadPreferences() {
             Set the minimum, preferred, and maximum
             workload hours for each faculty member.
           </p>
+
+          <button
+            className="back-button"
+            onClick={() => navigate("/dashboard")}
+          >
+            Back to Dashboard
+          </button>
         </div>
 
         <div className="workload-card">
-          <h2>Add Workload Preference</h2>
+          <h2>
+            {editingId
+              ? "Edit Workload Preference"
+              : "Add Workload Preference"}
+          </h2>
 
           <form onSubmit={handleSubmit}>
 
@@ -197,9 +314,8 @@ function WorkloadPreferences() {
                     key={faculty.id}
                     value={faculty.id}
                   >
-                    {faculty.name ||
-                      faculty.user?.name ||
-                      `Faculty #${faculty.id}`}
+                    {faculty.full_name ||
+                      `${faculty.first_name || ""} ${faculty.last_name || ""}`.trim()}
                   </option>
                 ))}
               </select>
@@ -283,14 +399,33 @@ function WorkloadPreferences() {
 
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting
-                ? "Adding..."
-                : "Add Workload Preference"}
-            </button>
+            <div className="form-actions">
+
+              <button
+                type="submit"
+                disabled={submitting}
+              >
+                {submitting
+                  ? editingId
+                    ? "Updating..."
+                    : "Adding..."
+                  : editingId
+                    ? "Update Workload Preference"
+                    : "Add Workload Preference"}
+              </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={cancelEdit}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+              )}
+
+            </div>
 
           </form>
 
@@ -329,6 +464,7 @@ function WorkloadPreferences() {
                     <th>Minimum Hours</th>
                     <th>Preferred Hours</th>
                     <th>Maximum Hours</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -359,6 +495,29 @@ function WorkloadPreferences() {
 
                         <td>
                           {preference.maximum_hours}
+                        </td>
+
+                        <td>
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="edit-button"
+                              onClick={() => startEdit(preference)}
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              className="delete-button"
+                              onClick={() => handleDelete(preference)}
+                              disabled={deletingId === preference.id}
+                            >
+                              {deletingId === preference.id
+                                ? "Deleting..."
+                                : "Delete"}
+                            </button>
+                          </div>
                         </td>
 
                       </tr>

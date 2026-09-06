@@ -60,6 +60,12 @@ class AllocationConflictChecker:
         preference_cycle=None,
         allocation_run=None,
     ):
+        """
+        Checks whether assigning the additional workload would
+        exceed the faculty member's maximum workload for the
+        selected preference cycle.
+        """
+
         is_within_limit = (
             self.workload_calculator.is_within_maximum(
                 faculty=faculty,
@@ -213,6 +219,10 @@ class AllocationConflictChecker:
         additional_hours,
         preference_cycle=None,
     ):
+        """
+        Runs all hard-constraint checks for a candidate.
+        """
+
         conflicts = []
 
         duplicate_conflict = self.check_duplicate_allocation(
@@ -280,6 +290,10 @@ class AllocationConflictChecker:
         additional_hours,
         preference_cycle=None,
     ):
+        """
+        Returns True when the candidate violates no hard constraints.
+        """
+
         conflicts = self.check_all(
             faculty=faculty,
             subject_offering=subject_offering,

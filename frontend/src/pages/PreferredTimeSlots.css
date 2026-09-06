@@ -1,7 +1,16 @@
 .preferred-time-slots-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
   padding: 30px;
+}
+
+.preferred-time-slots-page .page-header,
+.preferred-time-slots-page .form-card,
+.preferred-time-slots-page .table-card {
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {

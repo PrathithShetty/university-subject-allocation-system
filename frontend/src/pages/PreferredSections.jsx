@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import preferenceService from "../services/preferenceService";
 import facultyService from "../services/facultyService";
 import academicService from "../services/academicService";
 
+import "../styles/shared.css";
 import "./PreferredSections.css";
 
 
 function PreferredSections() {
+  const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState([]);
   const [sections, setSections] = useState([]);
@@ -15,8 +18,11 @@ function PreferredSections() {
   const [preferences, setPreferences] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     faculty: "",
@@ -54,6 +60,11 @@ function PreferredSections() {
 
       console.error(err);
 
+      if (err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
       setError(
         "Failed to load preferred section data."
       );
@@ -74,6 +85,18 @@ function PreferredSections() {
   }, []);
 
 
+  const resetForm = () => {
+    setFormData({
+      faculty: "",
+      preference_cycle: "",
+      section: "",
+      priority: "",
+    });
+
+    setEditingId(null);
+  };
+
+
   const handleChange = (event) => {
 
     const { name, value } = event.target;
@@ -83,6 +106,46 @@ function PreferredSections() {
       [name]: value,
     }));
 
+  };
+
+
+  const extractErrorMessage = (err, fallback) => {
+    const data = err.response?.data;
+
+    if (data && typeof data === "object") {
+      const messages = Object.entries(data)
+        .map(([field, value]) => {
+          return `${field}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        })
+        .join(" | ");
+
+      return messages || fallback;
+    }
+
+    return fallback;
+  };
+
+
+  const startEdit = (preference) => {
+    setEditingId(preference.id);
+
+    setFormData({
+      faculty: preference.faculty,
+      preference_cycle: preference.preference_cycle,
+      section: preference.section,
+      priority: preference.priority,
+    });
+
+    setError("");
+    setSuccess("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const cancelEdit = () => {
+    resetForm();
+    setError("");
   };
 
 
@@ -111,26 +174,24 @@ function PreferredSections() {
 
     try {
 
-      await preferenceService.createPreferredSection({
+      const payload = {
         faculty: Number(formData.faculty),
         preference_cycle: Number(formData.preference_cycle),
         section: Number(formData.section),
         priority: Number(formData.priority),
-      });
+      };
 
+      if (editingId) {
+        await preferenceService.updatePreferredSection(editingId, payload);
 
-      setSuccess(
-        "Preferred section added successfully."
-      );
+        setSuccess("Preferred section updated successfully.");
+      } else {
+        await preferenceService.createPreferredSection(payload);
 
+        setSuccess("Preferred section added successfully.");
+      }
 
-      setFormData({
-        faculty: "",
-        preference_cycle: "",
-        section: "",
-        priority: "",
-      });
-
+      resetForm();
 
       await loadData();
 
@@ -138,31 +199,57 @@ function PreferredSections() {
 
       console.error(err);
 
-      if (err.response?.data) {
+      setError(
+        extractErrorMessage(
+          err,
+          editingId
+            ? "Failed to update preferred section."
+            : "Failed to add preferred section."
+        )
+      );
 
-        const data = err.response.data;
+    }
 
-        const messages = Object.entries(data)
-          .map(([field, value]) => {
-            return `${field}: ${
-              Array.isArray(value)
-                ? value.join(", ")
-                : value
-            }`;
-          })
-          .join(" | ");
+  };
 
-        setError(
-          messages || "Failed to add preferred section."
-        );
 
-      } else {
+  const handleDelete = async (preference) => {
 
-        setError(
-          "Failed to add preferred section."
-        );
+    const confirmed = window.confirm(
+      "Delete this preferred section?"
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingId(preference.id);
+      setError("");
+      setSuccess("");
+
+      await preferenceService.deletePreferredSection(preference.id);
+
+      setSuccess("Preferred section deleted successfully.");
+
+      if (editingId === preference.id) {
+        resetForm();
       }
+
+      await loadData();
+
+    } catch (err) {
+
+      console.error(err);
+
+      setError(
+        extractErrorMessage(err, "Failed to delete preferred section.")
+      );
+
+    } finally {
+
+      setDeletingId(null);
 
     }
 
@@ -231,6 +318,13 @@ function PreferredSections() {
 
         </div>
 
+        <button
+          className="back-button"
+          onClick={() => navigate("/dashboard")}
+        >
+          Back to Dashboard
+        </button>
+
       </div>
 
 
@@ -255,7 +349,7 @@ function PreferredSections() {
       <div className="form-card">
 
         <h2>
-          Add Preferred Section
+          {editingId ? "Edit Preferred Section" : "Add Preferred Section"}
         </h2>
 
 
@@ -363,13 +457,14 @@ function PreferredSections() {
             <div className="form-group">
 
               <label>
-                Priority *
+                Priority * (1 highest - 5 lowest)
               </label>
 
               <input
                 type="number"
                 name="priority"
                 min="1"
+                max="5"
                 value={formData.priority}
                 onChange={handleChange}
                 placeholder="Example: 1"
@@ -386,8 +481,18 @@ function PreferredSections() {
               type="submit"
               className="primary-button"
             >
-              Add Preferred Section
+              {editingId ? "Update Preferred Section" : "Add Preferred Section"}
             </button>
+
+            {editingId && (
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
 
           </div>
 
@@ -439,6 +544,7 @@ function PreferredSections() {
                   <th>Preference Cycle</th>
                   <th>Section</th>
                   <th>Priority</th>
+                  <th>Actions</th>
 
                 </tr>
 
@@ -479,6 +585,25 @@ function PreferredSections() {
                         {preference.priority}
                       </span>
 
+                    </td>
+
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => startEdit(preference)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(preference)}
+                          disabled={deletingId === preference.id}
+                        >
+                          {deletingId === preference.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

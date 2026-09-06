@@ -1,7 +1,16 @@
 .faculty-preferences-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
   padding: 30px;
+}
+
+.faculty-preferences-page .page-header,
+.faculty-preferences-page .form-card,
+.faculty-preferences-page .table-card {
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {

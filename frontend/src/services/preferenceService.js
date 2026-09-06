@@ -22,6 +22,21 @@ const preferenceService = {
   },
 
 
+  updatePreferenceCycle: async (id, data) => {
+    const response = await api.put(
+      `/preferences/preference-cycles/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+
+  deletePreferenceCycle: async (id) => {
+    await api.delete(`/preferences/preference-cycles/${id}/`);
+  },
+
+
   getFacultyPreferences: async () => {
     const response = await api.get(
       "/preferences/faculty-preferences/"
@@ -38,6 +53,21 @@ const preferenceService = {
     );
 
     return response.data;
+  },
+
+
+  updateFacultyPreference: async (id, data) => {
+    const response = await api.put(
+      `/preferences/faculty-preferences/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+
+  deleteFacultyPreference: async (id) => {
+    await api.delete(`/preferences/faculty-preferences/${id}/`);
   },
 
 
@@ -60,6 +90,21 @@ const preferenceService = {
   },
 
 
+  updatePreferredSection: async (id, data) => {
+    const response = await api.put(
+      `/preferences/preferred-sections/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+
+  deletePreferredSection: async (id) => {
+    await api.delete(`/preferences/preferred-sections/${id}/`);
+  },
+
+
   getPreferredTimeSlots: async () => {
     const response = await api.get(
       "/preferences/preferred-time-slots/"
@@ -78,7 +123,23 @@ const preferenceService = {
     return response.data;
   },
 
-getFacultyAvailability: async () => {
+
+  updatePreferredTimeSlot: async (id, data) => {
+    const response = await api.put(
+      `/preferences/preferred-time-slots/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+
+  deletePreferredTimeSlot: async (id) => {
+    await api.delete(`/preferences/preferred-time-slots/${id}/`);
+  },
+
+
+  getFacultyAvailability: async () => {
     const response = await api.get("/preferences/faculty-availability/");
     return response.data;
   },
@@ -86,6 +147,19 @@ getFacultyAvailability: async () => {
   createFacultyAvailability: async (data) => {
     const response = await api.post("/preferences/faculty-availability/", data);
     return response.data;
+  },
+
+  updateFacultyAvailability: async (id, data) => {
+    const response = await api.put(
+      `/preferences/faculty-availability/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+  deleteFacultyAvailability: async (id) => {
+    await api.delete(`/preferences/faculty-availability/${id}/`);
   },
 
   getWorkloadPreferences: async () => {
@@ -96,6 +170,19 @@ getFacultyAvailability: async () => {
   createWorkloadPreference: async (data) => {
     const response = await api.post("/preferences/workload-preferences/", data);
     return response.data;
+  },
+
+  updateWorkloadPreference: async (id, data) => {
+    const response = await api.put(
+      `/preferences/workload-preferences/${id}/`,
+      data
+    );
+
+    return response.data;
+  },
+
+  deleteWorkloadPreference: async (id) => {
+    await api.delete(`/preferences/workload-preferences/${id}/`);
   },
 
 };

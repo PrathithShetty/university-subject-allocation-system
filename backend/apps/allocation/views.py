@@ -13,7 +13,9 @@ from apps.allocation.serializers import (
     SubjectAllocationSerializer,
 )
 from apps.allocation.services import AllocationEngine
+from apps.allocation.services.workload import WorkloadCalculator
 from apps.preferences.models import PreferenceCycle
+from apps.staff.models import Faculty
 
 
 class AllocationRunListCreateView(APIView):
@@ -237,3 +239,70 @@ class AllocationConflictListView(APIView):
         )
 
         return Response(serializer.data)
+
+
+class WorkloadDashboardView(APIView):
+    """
+    Returns the current workload status of every active faculty
+    member, optionally scoped to a preference cycle (for the
+    minimum/preferred/maximum hours) and/or a single allocation
+    run (for which allocations count toward the current hours).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        preference_cycle = None
+        preference_cycle_id = request.query_params.get(
+            "preference_cycle"
+        )
+
+        if preference_cycle_id:
+            preference_cycle = get_object_or_404(
+                PreferenceCycle,
+                pk=preference_cycle_id,
+            )
+
+        allocation_run = None
+        allocation_run_id = request.query_params.get(
+            "allocation_run"
+        )
+
+        if allocation_run_id:
+            allocation_run = get_object_or_404(
+                AllocationRun,
+                pk=allocation_run_id,
+            )
+
+        calculator = WorkloadCalculator()
+
+        faculties = (
+            Faculty.objects
+            .filter(is_active=True)
+            .select_related("department", "designation")
+            .order_by("first_name", "last_name")
+        )
+
+        results = []
+
+        for faculty in faculties:
+            summary = calculator.get_workload_status(
+                faculty=faculty,
+                preference_cycle=preference_cycle,
+                allocation_run=allocation_run,
+            )
+
+            results.append(
+                {
+                    "faculty_id": faculty.id,
+                    "faculty_name": faculty.full_name,
+                    "department": (
+                        faculty.department.name
+                        if faculty.department
+                        else None
+                    ),
+                    **summary,
+                }
+            )
+
+        return Response(results)
