@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
 
     "rest_framework",
@@ -40,6 +42,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -67,12 +70,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DATABASE_ENGINE"),
-        "NAME": BASE_DIR / os.getenv("DATABASE_NAME"),
+# Render (and most PaaS hosts) provide a single DATABASE_URL env var for a
+# Postgres instance. Locally, no DATABASE_URL is set, so we fall back to the
+# SQLite file configured via DATABASE_ENGINE/DATABASE_NAME in .env.
+if os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv("DATABASE_ENGINE"),
+            "NAME": BASE_DIR / os.getenv("DATABASE_NAME"),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -101,9 +115,30 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 MEDIA_URL = "/media/"
 
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Render (and most PaaS hosts) sit behind a proxy that terminates HTTPS and
+# forwards plain HTTP internally, with this header indicating the original
+# protocol. Without it, Django thinks every request is insecure and can loop
+# on HTTPS redirects.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
