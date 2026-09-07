@@ -25,6 +25,7 @@ staticfiles/
 # ==========================
 .env
 .env.*
+!.env.example
 
 # ==========================
 # Node.js / React
